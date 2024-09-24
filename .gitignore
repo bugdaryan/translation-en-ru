@@ -5,6 +5,7 @@ __pycache__/
 logs/
 translation_model/
 results/
+wandb/
 # C extensions
 *.so
 
