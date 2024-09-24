@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 import wandb
 from transformers import EarlyStoppingCallback
 import evaluate
-
+import numpy as np
 
 with open('config.yml', 'r') as f:
     config = yaml.safe_load(f)
@@ -34,8 +34,7 @@ wandb.init(project="translation-model",
         })
 
 dataset = load_dataset(config['dataset']['name'], config['dataset']['subset'])
-# split_dataset = dataset['train'].train_test_split(test_size=0.1, seed=42)
-train_ds, val_ds = dataset['train'], dataset['validation']
+train_ds, val_ds = dataset['train'], dataset['validation'].select(range(200))
 train_ds = train_ds.shuffle(seed=42)
 
 
@@ -75,22 +74,39 @@ train_dataset = TranslationDataset(train_ds, tokenizer, max_length)
 val_dataset = TranslationDataset(val_ds, tokenizer, max_length)
 
 bleu_metric = evaluate.load("bleu")
+bertscore_metric = evaluate.load("bertscore")
+meteor_metric = evaluate.load("meteor")
+rouge_metric = evaluate.load("rouge")
+
 
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
+    predictions = np.argmax(predictions, axis=-1)
+    labels = [[l if l != -100 else tokenizer.pad_token_id for l in label] for label in labels]
+
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
     
     decoded_labels = [[label] for label in decoded_labels]
     
     bleu = bleu_metric.compute(predictions=decoded_preds, references=decoded_labels)
-    return {"bleu": bleu["bleu"]}
+    meteor = meteor_metric.compute(predictions=decoded_preds, references=decoded_labels)
+    rouge = rouge_metric.compute(predictions=decoded_preds, references=decoded_labels)
+    bertscore = bertscore_metric.compute(predictions=decoded_preds, references=decoded_labels, model_type="bert-base-uncased") 
+    bertscore_f1 = sum(bertscore["f1"]) / len(bertscore["f1"])
+    
+    return {
+        "bleu": bleu["bleu"], 
+        "bertscore": bertscore_f1, 
+        "meteor": meteor["meteor"], 
+        "rouge": rouge["rouge1"]
+    }
 
 training_args = TrainingArguments(
     output_dir=f"./results/{model_name}",
     num_train_epochs=epochs,
     per_device_train_batch_size=batch_size,
-    per_device_eval_batch_size=batch_size,
+    per_device_eval_batch_size=4,
     warmup_steps=warmup_steps,
     weight_decay=0.01,
     logging_dir=f'./logs/{model_name}',
@@ -98,15 +114,15 @@ training_args = TrainingArguments(
     eval_strategy="steps",
     eval_steps=50,
     save_steps=50,
-    # eval_accumulation_steps=50,
+    eval_accumulation_steps=10,
     gradient_accumulation_steps=gradient_accumulation_steps,
     bf16=True,
     learning_rate=learning_rate,
     max_grad_norm=max_grad_norm,
     report_to='wandb',
     load_best_model_at_end=True,
-    metric_for_best_model='loss',
-    greater_is_better=False,
+    metric_for_best_model='bleu',
+    greater_is_better=True,
     deepspeed="ds_config.json",
 )
 
@@ -121,7 +137,7 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     callbacks=[early_stopping_callback],
-    # compute_metrics=compute_metrics,
+    compute_metrics=compute_metrics,
 )
 
 trainer.train()
