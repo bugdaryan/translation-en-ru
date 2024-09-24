@@ -10,22 +10,23 @@ from params import (
     config_dataset, 
     config_model, 
     config_train, 
-    config
+    config,
+    device
 )
 
 
 def train():
     init_wandb(config)
     train_ds, val_ds = load_train_val_datasets(config_dataset['name'], config_dataset['subset'])
-
-    model, tokenizer = load_model_tokenizer(config_model['name'], en_token, ru_token)
+    model_name = config_model['model_name']
+    model, tokenizer = load_model_tokenizer(model_name, en_token, ru_token, device)
     train_dataset = TranslationDataset(train_ds, tokenizer, config_model['max_length'])
     val_dataset = TranslationDataset(val_ds, tokenizer, config_model['max_length'])
 
-    model_name = config_model['name'].split("/")[-1] if "/" in config_model['name'] else config_model['name']
+    model_name = model_name.split('/')[-1] if '/' in model_name else model_name
 
     training_args = TrainingArguments(
-        output_dir=f"./results/{model_name}",
+        output_dir=f'./results/{model_name}',
         num_train_epochs=config_train['epochs'],
         per_device_train_batch_size=config_train['batch_size'],
         per_device_eval_batch_size=config_train['eval_batch_size'],
@@ -33,7 +34,7 @@ def train():
         weight_decay=config_train['weight_decay'],
         logging_dir=f'./logs/{model_name}',
         logging_steps=config_train['logging_steps'],
-        eval_strategy="steps",
+        eval_strategy='steps',
         eval_steps=config_train['eval_steps'],
         save_steps=config_train['save_steps'],
         eval_accumulation_steps=config_train['eval_accumulation_steps'],
@@ -63,5 +64,5 @@ def train():
     )
 
     trainer.train()
-    model.save_pretrained(f"./results/{model_name}")
-    tokenizer.save_pretrained(f"./results/{model_name}")
+    model.save_pretrained(f'./results/{model_name}')
+    tokenizer.save_pretrained(f'./results/{model_name}')

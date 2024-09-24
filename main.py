@@ -1,7 +1,6 @@
 import argparse
-import yaml
 from train import train
-# from inference import translate, load_model_tokenizer
+from inference import inference
 from params import config
 
 
@@ -12,7 +11,7 @@ def main():
     parser.add_argument('--dataset_name', default=config['dataset']['name'], help=f'Dataset name (default: {config["dataset"]["name"]})')
     parser.add_argument('--dataset_subset', default=config['dataset']['subset'], help=f'Dataset subset (default: {config["dataset"]["subset"]})')
     
-    parser.add_argument('--model_name', default=config['model']['name'], help=f'Model name (default: {config["model"]["name"]})')
+    parser.add_argument('--model_name', default=config['model']['model_name'], help=f'Model name (default: {config["model"]["model_name"]})')
     parser.add_argument('--checkpoint', default=None, help='Safetensor checkpoint to load')
     parser.add_argument('--model_max_length', type=int, default=config['model']['max_length'], help=f'Model max length (default: {config["model"]["max_length"]})')
     
@@ -42,15 +41,13 @@ def main():
             config['training'][key] = value
 
     if args.mode == 'train':
-        train(config)
+        train()
     elif args.mode == 'inference':
         if not args.input_text:
-            parser.error("--input_text is required for inference mode")
-        # model, tokenizer = load_model_tokenizer(config_model['name'], config_tokenizer['tokens']['en'], config_tokenizer['tokens']['ru'])
-        # _, translated_text = translate(args.input_text, model, tokenizer, config['model']['max_length'])
-        print('RUNNING INFERENCE')
-        print(f"Original text: {args.input_text}")
-        # print(f"Translated text: {translated_text}")
+            parser.error('--input_text is required for inference mode')
+        translated_text = inference(args.input_text)
+        print(f'Original text:\n{args.input_text}\n')
+        print(f'Translated text:\n{translated_text}')
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

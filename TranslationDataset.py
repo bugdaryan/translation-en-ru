@@ -20,11 +20,11 @@ class TranslationDataset(Dataset):
         source_text = item['translation'][self.source_lang]
         target_text = item['translation'][self.target_lang]
         
-        input_text = f"{en_token} {source_text} {ru_token} {target_text}"
-        encodings = self.tokenizer(input_text, truncation=True, max_length=self.max_length, padding="max_length")
-        encodings["labels"] = encodings["input_ids"].copy()
+        input_text = f'{en_token} {source_text} {ru_token} {target_text}'
+        encodings = self.tokenizer(input_text, truncation=True, max_length=self.max_length, padding='max_length')
+        encodings['labels'] = encodings['input_ids'].copy()
         
-        source_tokens = self.tokenizer(f"{en_token} {source_text} {ru_token}", truncation=True, max_length=self.max_length)
-        encodings["labels"][:len(source_tokens["input_ids"])] = [-100] * len(source_tokens["input_ids"])
+        source_tokens = self.tokenizer(f'{en_token} {source_text} {ru_token}', truncation=True, max_length=self.max_length)
+        encodings['labels'][:len(source_tokens['input_ids'])] = [-100] * len(source_tokens['input_ids'])
 
         return encodings
