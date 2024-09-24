@@ -1,6 +1,6 @@
 # Dataset
 dataset:
-  name: "opus_books"
+  name: "Helsinki-NLP/opus-100"
   subset: "en-ru"
   text_column: "translation"
   source_lang: "en"
@@ -17,7 +17,7 @@ training:
   epochs: 3
   learning_rate: 5e-5
   warmup_steps: 100
-  gradient_accumulation_steps: 1
+  gradient_accumulation_steps: 2
   max_grad_norm: 1.0
 
 # Tokenizer
