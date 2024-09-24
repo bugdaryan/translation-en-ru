@@ -41,17 +41,22 @@ def translate(text, model, tokenizer, max_length):
     return translated_text, ' '.join(processed_words)
 
 
-tokenizer = AutoTokenizer.from_pretrained(config['model']['name'])
-model = AutoModelForCausalLM.from_pretrained(config['model']['name'], device_map="auto")
 en_token = "[EN]"
 ru_token = "[RU]"
-tokenizer.add_special_tokens({'additional_special_tokens': [en_token, ru_token], 'pad_token': '[PAD]'})
-model.resize_token_embeddings(len(tokenizer))
+load_safetensors = False
+if load_safetensors:
+    tokenizer = AutoTokenizer.from_pretrained(config['model']['name'])
+    model = AutoModelForCausalLM.from_pretrained(config['model']['name'], device_map="auto")
+    tokenizer.add_special_tokens({'additional_special_tokens': [en_token, ru_token], 'pad_token': '[PAD]'})
+    model.resize_token_embeddings(len(tokenizer))
 
-state = load_file("./results/TinyLlama_v1.1/checkpoint-200/model.safetensors")
-model.load_state_dict(state)
+    state = load_file("./results/TinyLlama_v1.1/checkpoint-200/model.safetensors")
+    model.load_state_dict(state)
+else:
+    tokenizer = AutoTokenizer.from_pretrained('./results/TinyLlama_v1.1')
+    model = AutoModelForCausalLM.from_pretrained('./results/TinyLlama_v1.1', device_map="auto")
 
-input_text = "I am working at Apple but sometimes i feel like i am not doing enough, even though i am doing a lot of things and my manager is happy with me"
+input_text = "I am eatting apple while i am working at Apple"
 full_translation, translated_text = translate(input_text, model, tokenizer, max_length)
 print(f"Original text: {input_text}")
 print(f"Translated text: {translated_text}")
