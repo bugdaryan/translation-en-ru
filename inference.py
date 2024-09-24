@@ -1,10 +1,10 @@
 import yaml
 import torch
-from datasets import load_dataset
-from transformers import GPT2LMHeadModel, GPT2TokenizerFast, Trainer, TrainingArguments, AutoModel, AutoTokenizer, AutoConfig
-from torch.utils.data import Dataset
+from transformers import AutoModelForCausalLM, AutoTokenizer
 import wandb
 import json
+from safetensors.torch import load_file
+import re
 
 
 with open('config.yml', 'r') as f:
@@ -22,18 +22,34 @@ max_length = int(config['model']['max_length'])
 
 def translate(text, model, tokenizer, max_length):
     model.eval()
-    input_text = f"[BOS] {text} [EOS]"
-    inputs = tokenizer(input_text, return_tensors="pt", truncation=True, max_length=256, padding="max_length")
+    input_text = f"[EN] {text} [RU]"
+    inputs = tokenizer(input_text, return_tensors="pt", truncation=True, max_length=max_length, padding=True)
     inputs = {key: value.to(model.device) for key, value in inputs.items()}
     with torch.no_grad():
-        outputs = model.generate(**inputs, max_length=max_length, num_beams=10, early_stopping=True)
+        outputs = model.generate(**inputs, max_new_tokens=max_length, pad_token_id=tokenizer.pad_token_id)
     translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return translated_text
+    translation = translated_text.split("[RU]")[1]
+    words = re.findall(r'\w+|[^\w\s]', translation, re.UNICODE)
+    processed_words = []
+
+    for i in range(len(words)):
+        if i > 0 and words[i] == words[i-1]:
+            break
+        processed_words.append(words[i])
+    return translated_text, ' '.join(processed_words)
 
 
-tokenizer = GPT2TokenizerFast.from_pretrained("./translation_model")
-model = GPT2LMHeadModel.from_pretrained("./translation_model", device_map="auto")
+tokenizer = AutoTokenizer.from_pretrained(config['model']['name'])
+model = AutoModelForCausalLM.from_pretrained(config['model']['name'], device_map="auto")
 
-input_text = "It turned out that the very opposite was the case."
-translated_text = translate(input_text, model, tokenizer, max_length)
+tokenizer.add_special_tokens({'pad_token': '[PAD]', 'bos_token': '[BOS]', 'eos_token': '[EOS]'})
+model.resize_token_embeddings(len(tokenizer))
+
+state = load_file("./results/TinyLlama_v1.1/checkpoint-100/model.safetensors")
+model.load_state_dict(state)
+
+input_text = "I am working at apple"
+full_translation, translated_text = translate(input_text, model, tokenizer, max_length)
+print(f"Original text: {input_text}")
 print(f"Translated text: {translated_text}")
+print(f"Full translation: {full_translation}")
