@@ -6,7 +6,7 @@ dataset:
   target_lang: "ru"
 
 model:
-  name: "TinyLlama/TinyLlama_v1.1"
+  model_name: "TinyLlama/TinyLlama_v1.1"
   max_length: 512
 
 training:
