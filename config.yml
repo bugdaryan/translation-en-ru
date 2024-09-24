@@ -1,0 +1,28 @@
+# Dataset
+dataset:
+  name: "opus_books"
+  subset: "en-ru"
+  text_column: "translation"
+  source_lang: "en"
+  target_lang: "ru"
+
+# Model
+model:
+  name: "gpt2"  # We'll use a small GPT-2 model
+  max_length: 512
+
+# Training
+training:
+  batch_size: 8
+  epochs: 1
+  learning_rate: 5e-5
+  warmup_steps: 100
+  gradient_accumulation_steps: 4
+  max_grad_norm: 1.0
+
+# Tokenizer
+tokenizer:
+  max_length: 512
+
+# Device
+device: "cuda"  # or "cpu" if you don't have a GPU
