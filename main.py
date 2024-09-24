@@ -3,12 +3,13 @@ import torch
 from datasets import load_dataset
 from transformers import GPT2LMHeadModel, GPT2TokenizerFast, Trainer, TrainingArguments
 from torch.utils.data import Dataset
+import wandb
 
-# Load configuration
 with open('config.yml', 'r') as f:
     config = yaml.safe_load(f)
 
-# Convert necessary configurations to appropriate types
+
+
 batch_size = int(config['training']['batch_size'])
 epochs = int(config['training']['epochs'])
 learning_rate = float(config['training']['learning_rate'])
@@ -17,18 +18,29 @@ gradient_accumulation_steps = int(config['training']['gradient_accumulation_step
 max_grad_norm = float(config['training']['max_grad_norm'])
 max_length = int(config['model']['max_length'])
 
-# Load dataset
-dataset = load_dataset(config['dataset']['name'], config['dataset']['subset'])
+wandb.init(project="translation-model",
+        config={
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "learning_rate": learning_rate,
+            "warmup_steps": warmup_steps,
+            "gradient_accumulation_steps": gradient_accumulation_steps,
+            "max_grad_norm": max_grad_norm,
+            "max_length": max_length,
+        })
 
-# Load tokenizer and model
+dataset = load_dataset(config['dataset']['name'], config['dataset']['subset'])
+split_dataset = dataset['train'].train_test_split(test_size=0.1, seed=42)
+train_ds, val_ds = split_dataset['train'], split_dataset['test']
+train_ds = train_ds.shuffle(seed=42)
+
+
 tokenizer = GPT2TokenizerFast.from_pretrained(config['model']['name'])
 model = GPT2LMHeadModel.from_pretrained(config['model']['name'])
 
-# Add special tokens for translation
 tokenizer.add_special_tokens({'pad_token': '[PAD]', 'bos_token': '[BOS]', 'eos_token': '[EOS]'})
 model.resize_token_embeddings(len(tokenizer))
 
-# Prepare the dataset
 class TranslationDataset(Dataset):
     def __init__(self, dataset, tokenizer, max_length):
         self.dataset = dataset
@@ -49,18 +61,14 @@ class TranslationDataset(Dataset):
         
         encodings["labels"] = encodings["input_ids"].copy()
         
-        # Mask the source text part for loss calculation
         source_tokens = self.tokenizer(f"[BOS] {source_text} [EOS]", truncation=True, max_length=self.max_length)
-        # encodings["labels"][:len(source_tokens["input_ids"])] = -100
         encodings["labels"][:len(source_tokens["input_ids"])] = [-100] * len(source_tokens["input_ids"])
-
 
         return encodings
 
-train_dataset = TranslationDataset(dataset['train'], tokenizer, max_length)
-# val_dataset = TranslationDataset(dataset['validation'], tokenizer, max_length)
+train_dataset = TranslationDataset(train_ds, tokenizer, max_length)
+val_dataset = TranslationDataset(val_ds, tokenizer, max_length)
 
-# Define training arguments
 training_args = TrainingArguments(
     output_dir="./results",
     num_train_epochs=epochs,
@@ -71,25 +79,22 @@ training_args = TrainingArguments(
     logging_dir='./logs',
     logging_steps=10,
     evaluation_strategy="steps",
-    eval_steps=500,
-    save_steps=1000,
+    eval_steps=50,
+    save_steps=50,
     gradient_accumulation_steps=gradient_accumulation_steps,
     fp16=torch.cuda.is_available(),
     learning_rate=learning_rate,
     max_grad_norm=max_grad_norm,
-    report_to='tensorboard'
+    report_to='wandb'
 )
 
-# Initialize Trainer
 trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    # eval_dataset=val_dataset,
+    eval_dataset=val_dataset,
 )
 
-# Train the model
 trainer.train()
-
-# Save the model
-trainer.save_model("./translation_model")
+model.save_pretrained("./translation_model")
+tokenizer.save_pretrained("./translation_model")
