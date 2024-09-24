@@ -26,29 +26,32 @@ def translate(text, model, tokenizer, max_length):
     inputs = tokenizer(input_text, return_tensors="pt", truncation=True, max_length=max_length, padding=True)
     inputs = {key: value.to(model.device) for key, value in inputs.items()}
     with torch.no_grad():
-        outputs = model.generate(**inputs, max_new_tokens=max_length, pad_token_id=tokenizer.pad_token_id)
+        outputs = model.generate(**inputs, max_length=max_length, num_beams=5, early_stopping=True, pad_token_id=tokenizer.pad_token_id)
     translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    translation = translated_text.split("[RU]")[1]
+
+    translation = translated_text.replace(text, "").strip()
     words = re.findall(r'\w+|[^\w\s]', translation, re.UNICODE)
     processed_words = []
 
     for i in range(len(words)):
         if i > 0 and words[i] == words[i-1]:
             break
-        processed_words.append(words[i])
+        if words[i] not in ['?', '!', '.', ',']:
+            processed_words.append(words[i])
     return translated_text, ' '.join(processed_words)
 
 
 tokenizer = AutoTokenizer.from_pretrained(config['model']['name'])
 model = AutoModelForCausalLM.from_pretrained(config['model']['name'], device_map="auto")
-
-tokenizer.add_special_tokens({'pad_token': '[PAD]', 'bos_token': '[BOS]', 'eos_token': '[EOS]'})
+en_token = "[EN]"
+ru_token = "[RU]"
+tokenizer.add_special_tokens({'additional_special_tokens': [en_token, ru_token], 'pad_token': '[PAD]'})
 model.resize_token_embeddings(len(tokenizer))
 
 state = load_file("./results/TinyLlama_v1.1/checkpoint-100/model.safetensors")
 model.load_state_dict(state)
 
-input_text = "I am working at apple"
+input_text = "I am working at Apple but sometimes i feel like i am not doing enough, even though i am doing a lot of things and my manager is happy with me"
 full_translation, translated_text = translate(input_text, model, tokenizer, max_length)
 print(f"Original text: {input_text}")
 print(f"Translated text: {translated_text}")
