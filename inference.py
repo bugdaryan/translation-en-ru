@@ -36,7 +36,7 @@ def translate(text, model, tokenizer, max_length):
     for i in range(len(words)):
         if i > 0 and words[i] == words[i-1]:
             break
-        if words[i] not in ['?', '!', '.', ',']:
+        if words[i] not in ['?', '!', '.', ','] and len(words[i]) < 20:
             processed_words.append(words[i])
     return translated_text, ' '.join(processed_words)
 
@@ -48,7 +48,7 @@ ru_token = "[RU]"
 tokenizer.add_special_tokens({'additional_special_tokens': [en_token, ru_token], 'pad_token': '[PAD]'})
 model.resize_token_embeddings(len(tokenizer))
 
-state = load_file("./results/TinyLlama_v1.1/checkpoint-100/model.safetensors")
+state = load_file("./results/TinyLlama_v1.1/checkpoint-200/model.safetensors")
 model.load_state_dict(state)
 
 input_text = "I am working at Apple but sometimes i feel like i am not doing enough, even though i am doing a lot of things and my manager is happy with me"
