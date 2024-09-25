@@ -14,7 +14,8 @@ from params import (
 
 
 def train():
-    init_wandb(config)
+    if config_train['report_to']=='wandb':
+        init_wandb(config)
     train_ds, val_ds = load_train_val_datasets(config_dataset['name'], config_dataset['subset'])
     model_name = config_model['model_name']
     tokenizer_name = config_model['tokenizer_name']
@@ -38,7 +39,7 @@ def train():
         fp16=config_train['bf16'],
         learning_rate=config_train['learning_rate'],
         max_grad_norm=config_train['max_grad_norm'],
-        report_to='wandb',
+        report_to=config_train['report_to'],
         load_best_model_at_end=True,
         metric_for_best_model=config_train['metric_for_best_model'],
         greater_is_better=metric_greater_is_better,

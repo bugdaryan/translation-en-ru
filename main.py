@@ -47,7 +47,10 @@ def main():
 
     if args.mode == 'train':
         num_available_gpus = torch.cuda.device_count()
-        subprocess.run(['deepspeed', 'train.py', '--num_gpus', str(num_available_gpus)])
+        if config['training']['deepspeed']:
+            subprocess.run(['deepspeed', 'train.py', '--num_gpus', str(num_available_gpus)])
+        else:
+            subprocess.run(['python', 'train.py'])
     elif args.mode == 'inference':
         if not args.input_text:
             parser.error('--input_text is required for inference mode')
