@@ -3,6 +3,7 @@ from datasets import load_dataset
 import wandb
 import re
 from safetensors.torch import load_file
+from flair.models import SequenceTagger
 
 def init_wandb(config):
     wandb.init(project='translation-model',
@@ -12,7 +13,7 @@ def init_wandb(config):
 def load_model_tokenizer(model_name, en_token, ru_token, device, checkpoint=None):
     model = AutoModelForCausalLM.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    special_tokens = tokenizer.special_tokens_map['additional_special_tokens']
+    special_tokens = tokenizer.special_tokens_map.get('additional_special_tokens', [])
     
     if en_token not in special_tokens \
         and ru_token not in special_tokens:
@@ -26,6 +27,11 @@ def load_model_tokenizer(model_name, en_token, ru_token, device, checkpoint=None
         model.load_state_dict(load_file(checkpoint))
 
     return model, tokenizer
+
+
+def load_ner_model():
+    tagger = SequenceTagger.load("flair/ner-english-fast")
+    return tagger
 
 
 def load_train_val_datasets(dataset_name, subset, val_rows=200):
