@@ -30,5 +30,6 @@ training:
   early_stopping_patience: 10
   early_stopping_threshold: 0.01
   deepspeed: "ds_config.json"
+  report_to: "wandb"
 
 device: "cuda"
