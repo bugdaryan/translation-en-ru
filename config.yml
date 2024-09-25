@@ -8,6 +8,7 @@ dataset:
 model:
   model_name: "TinyLlama/TinyLlama_v1.1"
   max_length: 512
+  checkpoint: "results/TinyLlama_v1.1/checkpoint-200/model.safetensors"
 
 training:
   training_batch_size: 16
