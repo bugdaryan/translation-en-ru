@@ -1,39 +1,31 @@
 dataset:
-  name: "Helsinki-NLP/opus-100"
-  subset: "en-ru"
-  text_column: "translation"
-  source_lang: "en"
-  target_lang: "ru"
-
+  name: Helsinki-NLP/opus-100
+  source_lang: en
+  subset: en-ru
+  target_lang: ru
+  text_column: translation
+device: cuda
 model:
-  model_name: "TinyLlama/TinyLlama_v1.1"
+  checkpoint: null
+  embedding_model_name: intfloat/multilingual-e5-small
   max_length: 512
-  checkpoint: "results/TinyLlama_v1.1/checkpoint-200/model.safetensors"
-
+  model_name: Helsinki-NLP/opus-mt-en-ru
+  tokenizer_name: Helsinki-NLP/opus-mt-en-ru
 training:
-  training_batch_size: 16
-  eval_batch_size: 4
-  epochs: 3
-  learning_rate: 5e-5
-  warmup_steps: 100
-  gradient_accumulation_steps: 2
-  max_grad_norm: 1.0
-  weight_decay: 0.01
-  logging_steps: 10
-  eval_steps: 50
-  save_steps: 50
   bf16: true
-  eval_accumulation_steps: 10
-  metric_for_best_model: "bleu" 
-  early_stopping_patience: 10
+  deepspeed: ds_config.json
+  early_stopping_patience: 30
   early_stopping_threshold: 0.01
-  deepspeed: "ds_config.json"
-
-
-tokenizer:
-  max_length: 512
-  tokens:
-    en: "[EN]"
-    ru: "[RU]"
-
-device: "cuda"
+  epochs: 3
+  eval_accumulation_steps: 10
+  eval_batch_size: 4
+  eval_steps: 50
+  gradient_accumulation_steps: 2
+  learning_rate: 5.0e-05
+  logging_steps: 10
+  max_grad_norm: 1.0
+  metric_for_best_model: meteor
+  save_steps: 50
+  training_batch_size: 64
+  warmup_steps: 100
+  weight_decay: 0.01
