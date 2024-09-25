@@ -2,7 +2,10 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+logs/
+translation_model/
+results/
+wandb/
 # C extensions
 *.so
 
