@@ -2,18 +2,29 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
 import wandb
 import re
+from safetensors.torch import load_file
 
 def init_wandb(config):
     wandb.init(project='translation-model',
             config=config)
 
 
-def load_model_tokenizer(model_name, en_token, ru_token, device):
+def load_model_tokenizer(model_name, en_token, ru_token, device, checkpoint=None):
     model = AutoModelForCausalLM.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    tokenizer.add_special_tokens({'additional_special_tokens': [en_token, ru_token], 'pad_token': '[PAD]'})
-    model.resize_token_embeddings(len(tokenizer))
+    special_tokens = tokenizer.special_tokens_map['additional_special_tokens']
+    
+    if en_token not in special_tokens \
+        and ru_token not in special_tokens:
+        tokenizer.add_special_tokens({'additional_special_tokens': [en_token, ru_token], 'pad_token': '[PAD]'})
+    
+    if len(tokenizer) != len(model.get_input_embeddings().weight):
+        model.resize_token_embeddings(len(tokenizer))
     model.to(device)
+
+    if checkpoint:
+        model.load_state_dict(load_file(checkpoint))
+
     return model, tokenizer
 
 
