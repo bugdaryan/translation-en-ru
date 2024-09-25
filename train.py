@@ -21,7 +21,6 @@ def train():
     model, tokenizer = load_model_tokenizer(model_name, tokenizer_name, device)
     translation_data_collator = TranslationDataCollator(tokenizer, config_train['training_batch_size'], config_model['max_length'], config_dataset['source_lang'], config_dataset['target_lang'])
     model_name = model_name.split('/')[-1] if '/' in model_name else model_name
-
     training_args = Seq2SeqTrainingArguments(
         output_dir=f'./results/{model_name}',
         num_train_epochs=config_train['epochs'],
@@ -66,3 +65,7 @@ def train():
     trainer.train()
     model.save_pretrained(f'./results/{model_name}')
     tokenizer.save_pretrained(f'./results/{model_name}')
+
+
+if __name__ == '__main__':
+    train()
