@@ -27,7 +27,7 @@ def main():
     parser.add_argument('--eval_steps', type=int, default=config['training']['eval_steps'], help=f'Evaluation steps (default: {config["training"]["eval_steps"]})')
     parser.add_argument('--save_steps', type=int, default=config['training']['save_steps'], help=f'Save steps (default: {config["training"]["save_steps"]})')
     parser.add_argument('--metric_for_best_model', default=config['training']['metric_for_best_model'], help=f'Metric for best model (default: {config["training"]["metric_for_best_model"]})')
-    
+    parser.add_argument('--translation_mode', choices=['normal', 'undertranslation', 'overtranslation'], required=True, help='Translation mode to do inference (Defoult: normal)')
     parser.add_argument('--input_text', help='Text to translate (for inference mode only)')
 
     args = parser.parse_args()
@@ -45,9 +45,9 @@ def main():
     elif args.mode == 'inference':
         if not args.input_text:
             parser.error('--input_text is required for inference mode')
-        translated_text = inference(args.input_text)
+        translated_text = inference(args.input_text, args.translation_mode)
         print(f'Original text:\n{args.input_text}\n')
-        print(f'Translated text:\n{translated_text}')
+        print(f'Translated text ({args.translation_mode} mode):\n{translated_text}')
 
 if __name__ == '__main__':
     main()
