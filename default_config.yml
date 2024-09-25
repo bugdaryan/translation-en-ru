@@ -1,0 +1,34 @@
+dataset:
+  name: "Helsinki-NLP/opus-100"
+  subset: "en-ru"
+  text_column: "translation"
+  source_lang: "en"
+  target_lang: "ru"
+
+model:
+  model_name: "Helsinki-NLP/opus-mt-en-ru"
+  tokenizer_name: "Helsinki-NLP/opus-mt-en-ru"
+  embedding_model_name: "intfloat/multilingual-e5-small"
+  max_length: 512
+  checkpoint: null
+
+training:
+  training_batch_size: 64
+  eval_batch_size: 4
+  epochs: 3
+  learning_rate: 0.00005
+  warmup_steps: 100
+  gradient_accumulation_steps: 2
+  max_grad_norm: 1.0
+  weight_decay: 0.01
+  logging_steps: 10
+  eval_steps: 50
+  save_steps: 50
+  bf16: true
+  eval_accumulation_steps: 10
+  metric_for_best_model: "bleu" 
+  early_stopping_patience: 10
+  early_stopping_threshold: 0.01
+  deepspeed: "ds_config.json"
+
+device: "cuda"
